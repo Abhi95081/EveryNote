@@ -56,4 +56,16 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+
+// LottieLoadingAnimation
+    implementation("com.airbnb.android:lottie-compose:6.4.0")
+
+    //navigation
+    implementation ("androidx.navigation:navigation-compose:2.7.7")
+
+    //google auth
+    implementation ("com.google.android.gms:play-services-auth:21.0.0")
+
+
 }
