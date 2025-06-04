@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 class UserPreferences(private val context: Context) {
-
     private val Context.dataStore by preferencesDataStore(name = "user_prefs")
 
     private val NAME_KEY = stringPreferencesKey("name")
@@ -20,11 +19,11 @@ class UserPreferences(private val context: Context) {
     private val PASSWORD_KEY = stringPreferencesKey("password")
 
     suspend fun saveUser(name: String, photoUrl: String, email: String, password: String) {
-        context.dataStore.edit { prefs ->
-            prefs[NAME_KEY] = name
-            prefs[PHOTO_URL_KEY] = photoUrl
-            prefs[EMAIL_KEY] = email
-            prefs[PASSWORD_KEY] = password
+        context.dataStore.edit {
+            it[NAME_KEY] = name
+            it[PHOTO_URL_KEY] = photoUrl
+            it[EMAIL_KEY] = email
+            it[PASSWORD_KEY] = password
         }
     }
 

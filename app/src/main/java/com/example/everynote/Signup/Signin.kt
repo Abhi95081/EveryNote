@@ -50,22 +50,18 @@ fun LoginScreen(navHostController: NavHostController) {
     var passwordVisible by remember { mutableStateOf(false) }
     var pickedImageUri by remember { mutableStateOf<Uri?>(null) }
 
+    val launcher = rememberLauncherForActivityResult(contract = GetContent()) {
+        it?.let { pickedImageUri = it }
+    }
+
     LaunchedEffect(savedUser.photoUrl) {
         pickedImageUri = if (savedUser.photoUrl.isNotEmpty()) savedUser.photoUrl.toUri() else null
     }
 
-    val launcher = rememberLauncherForActivityResult(contract = GetContent()) { uri: Uri? ->
-        uri?.let { pickedImageUri = it }
-    }
-
     val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.logic))
-    val progress by animateLottieCompositionAsState(
-        composition = composition,
-        iterations = LottieConstants.IterateForever,
-        isPlaying = true
-    )
+    val progress by animateLottieCompositionAsState(composition, iterations = LottieConstants.IterateForever)
 
-    val scrollState = rememberScrollState()
+    val scroll = rememberScrollState()
 
     Box(
         modifier = Modifier
@@ -74,150 +70,115 @@ fun LoginScreen(navHostController: NavHostController) {
         contentAlignment = Alignment.Center
     ) {
         Card(
-            modifier = Modifier
-                .fillMaxWidth(0.92f)
-                .wrapContentHeight(),
-            shape = MaterialTheme.shapes.large,
-            elevation = CardDefaults.cardElevation(defaultElevation = 16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            modifier = Modifier.fillMaxWidth(0.92f),
+            elevation = CardDefaults.cardElevation(10.dp),
+            colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surface)
         ) {
             Column(
                 modifier = Modifier
-                    .padding(28.dp)
-                    .verticalScroll(scrollState),
+                    .padding(24.dp)
+                    .verticalScroll(scroll),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                LottieAnimation(
-                    composition = composition,
-                    progress = progress,
-                    modifier = Modifier.size(160.dp)
-                )
+                LottieAnimation(composition, progress, modifier = Modifier.size(160.dp))
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
+                // Avatar Picker
                 Box(
                     modifier = Modifier
-                        .size(150.dp)
-                        .clickable { launcher.launch("image/*") }
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), shape = CircleShape),
+                        .size(140.dp)
+                        .clickable { launcher.launch("image/*") },
                     contentAlignment = Alignment.Center
                 ) {
-                    if (pickedImageUri == null) {
+                    val avatarModifier = Modifier
+                        .size(120.dp)
+                        .clip(CircleShape)
+                        .border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
+
+                    if (pickedImageUri != null) {
                         Image(
-                            painter = painterResource(id = R.drawable.avtar),
-                            contentDescription = "Default Avatar",
-                            modifier = Modifier
-                                .size(130.dp)
-                                .background(Color.White, CircleShape)
-                                .padding(6.dp)
-                                .clip(CircleShape)
-                                .border(
-                                    width = 3.dp,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    shape = CircleShape
-                                )
+                            painter = rememberAsyncImagePainter(pickedImageUri),
+                            contentDescription = null,
+                            modifier = avatarModifier
                         )
                     } else {
                         Image(
-                            painter = rememberAsyncImagePainter(pickedImageUri),
-                            contentDescription = "Selected Image",
-                            modifier = Modifier
-                                .size(130.dp)
-                                .clip(CircleShape)
-                                .border(
-                                    width = 3.dp,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    shape = CircleShape
-                                )
+                            painter = painterResource(id = R.drawable.avtar),
+                            contentDescription = null,
+                            modifier = avatarModifier
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(22.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
+                Text("Welcome Back", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                Text("Please login to continue", fontSize = 16.sp, color = Color.Gray)
 
+                Spacer(modifier = Modifier.height(20.dp))
 
-
-
-                Text(
-                    text = "Welcome Back",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Text(
-                    text = "Please login to continue",
-                    fontSize = 18.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 6.dp, bottom = 24.dp)
-                )
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
                     label = { Text("Name") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
                 )
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
                     label = { Text("Email") },
-                    singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                    modifier = Modifier.fillMaxWidth()
-
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
                 )
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
                     label = { Text("Password") },
-                    singleLine = true,
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
-                        val icon = if (passwordVisible) Icons.Filled.ArrowForward else Icons.Filled.ArrowBack
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
                             Icon(
-                                imageVector = icon,
-                                contentDescription = if (passwordVisible) "Hide password" else "Show password",
-                                tint = MaterialTheme.colorScheme.primary
+                                imageVector = if (passwordVisible) Icons.Default.ArrowForward else Icons.Default.ArrowBack,
+                                contentDescription = null
                             )
                         }
                     },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     modifier = Modifier.fillMaxWidth(),
-
+                    singleLine = true
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
                 Button(
                     onClick = {
                         scope.launch {
                             userPrefs.saveUser(
-                                name = name,
-                                photoUrl = pickedImageUri?.toString() ?: "",
-                                email = email,
-                                password = password
+                                name,
+                                pickedImageUri?.toString() ?: "",
+                                email,
+                                password
                             )
                             navHostController.navigate("home") {
                                 popUpTo("login") { inclusive = true }
                             }
                         }
                     },
+                    shape = CircleShape,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp),
-                    shape = CircleShape,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        .height(54.dp)
                 ) {
-                    Text("Login", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
+                    Text("Login", fontSize = 18.sp)
                 }
             }
         }
