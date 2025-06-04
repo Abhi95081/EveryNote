@@ -70,5 +70,11 @@ dependencies {
 
     implementation ("androidx.compose.material3:material3:1.0.1")
 
+        //databse
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
+    // image
+    implementation ("io.coil-kt:coil-compose:2.4.0")
+
+
 
 }

@@ -1,5 +1,6 @@
 package com.example.everynote
 
+import LoginScreen
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -25,7 +26,6 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.*
 import com.example.everynote.Animation.LottieLoadingAnimation
 import com.example.everynote.Screens.HomeScreen
-import com.example.everynote.Signup.LoginScreen
 import com.example.everynote.ui.theme.EveryNoteTheme
 
 
