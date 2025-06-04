@@ -152,7 +152,6 @@ fun LoginScreen(navHostController: NavHostController) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 6.dp, bottom = 24.dp)
                 )
-
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },

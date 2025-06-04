@@ -75,7 +75,7 @@ dependencies {
     // image
     implementation ("io.coil-kt:coil-compose:2.4.0")
 
-    implementation ("androidx.compose.material3:material3:1.1.0") // or latest stable version
+
 
 
 
