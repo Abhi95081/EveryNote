@@ -55,17 +55,6 @@
 
 ---
 
-## 📂 Project Structure
-com.example.everynote/
-│
-├── Animation/ # Lottie animations
-├── Screens/ # All composable screens
-├── prefdatastorage/ # SharedPreferences helpers and note data
-├── viewmodel/ # NoteViewModel and factory class
-├── ui.theme/ # App theming (colors, typography)
-├── MainActivity.kt # NavHost and screen routing
-└── README.md
-
 ## 👨‍💻 Author
 Abhishek Roushan
 📱 Android Developer | Kotlin | Jetpack Compose Enthusiast
