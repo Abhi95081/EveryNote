@@ -1,5 +1,6 @@
 package com.example.everynote.Screens
 
+import NoteViewModel
 import android.app.DatePickerDialog
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
@@ -22,7 +23,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.everynote.prefdatastorage.homedb.NoteEntity
-import com.example.everynote.prefdatastorage.homedb.NoteViewModel
+import kotlinx.coroutines.flow.StateFlow
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -37,23 +38,24 @@ fun HomeScreen(viewModel: NoteViewModel) {
     var newCategoryName by remember { mutableStateOf("") }
     var inputText by remember { mutableStateOf("") }
 
-    val allNotes by viewModel.notes.collectAsState()
+    val notesState: StateFlow<List<NoteEntity>> = viewModel.notes as StateFlow<List<NoteEntity>>
+    val notes by notesState.collectAsState()
 
-    val filteredNotes = remember(allNotes, selectedCategory, searchText) {
-        allNotes.filter { note ->
+    val filteredNotes = remember(notes, searchText, selectedCategory) {
+        notes.filter { note ->
             note.category == selectedCategory &&
-                    (searchText.isEmpty() || note.content.contains(searchText, ignoreCase = true))
+                    (searchText.isBlank() || note.content.contains(searchText, ignoreCase = true))
         }
     }
 
-    val calendar = Calendar.getInstance()
+    val calendar = remember { Calendar.getInstance() }
     val datePickerDialog = remember {
         DatePickerDialog(
             context,
             { _, year, month, dayOfMonth ->
                 calendar.set(year, month, dayOfMonth)
-                val dateString = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(calendar.time)
-                inputText = if (inputText.isEmpty()) dateString else "$inputText\n$dateString"
+                val formattedDate = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(calendar.time)
+                inputText = if (inputText.isBlank()) formattedDate else "$inputText\n$formattedDate"
             },
             calendar.get(Calendar.YEAR),
             calendar.get(Calendar.MONTH),
@@ -73,7 +75,6 @@ fun HomeScreen(viewModel: NoteViewModel) {
                     value = newCategoryName,
                     onValueChange = { newCategoryName = it },
                     placeholder = { Text("Enter category name") },
-                    singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
             },
@@ -104,9 +105,8 @@ fun HomeScreen(viewModel: NoteViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = 40.dp, start = 20.dp, end = 20.dp, bottom = 20.dp)
+            .padding(20.dp)
     ) {
-        // Search + Date Icon Row
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
@@ -115,42 +115,29 @@ fun HomeScreen(viewModel: NoteViewModel) {
                 value = searchText,
                 onValueChange = { searchText = it },
                 placeholder = { Text("Search your notes") },
-                singleLine = true,
-                shape = RoundedCornerShape(50.dp),
                 modifier = Modifier
                     .weight(1f)
-                    .height(56.dp)
+                    .height(56.dp),
+                shape = RoundedCornerShape(50.dp),
+                singleLine = true
             )
             Spacer(modifier = Modifier.width(12.dp))
             IconButton(onClick = { datePickerDialog.show() }) {
-                Icon(
-                    Icons.Default.DateRange,
-                    contentDescription = "Add Date",
-                    tint = MaterialTheme.colorScheme.primary
-                )
+                Icon(Icons.Default.DateRange, contentDescription = "Pick Date")
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Categories LazyRow
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            // List of categories including "General" + dynamic + "+ Create"
-            val categories = listOf("General") +
-                    allNotes.map { it.category }.distinct().filter { it != "General" } +
-                    listOf("+ Create")
+        val categories = listOf("General") + notes.map { it.category }.distinct().filter { it != "General" } + listOf("+ Create")
 
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             items(categories) { category ->
                 CategoryItem(
                     text = category,
                     isSelected = category == selectedCategory,
                     onClick = {
-                        if (category == "+ Create") {
-                            showCreateDialog = true
-                        } else {
+                        if (category == "+ Create") showCreateDialog = true else {
                             selectedCategory = category
                             inputText = ""
                         }
@@ -161,7 +148,6 @@ fun HomeScreen(viewModel: NoteViewModel) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Input TextField for note content
         OutlinedTextField(
             value = inputText,
             onValueChange = { inputText = it },
@@ -174,59 +160,34 @@ fun HomeScreen(viewModel: NoteViewModel) {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Save button
         Button(
             onClick = {
-                if (inputText.isNotEmpty()) {
-                    viewModel.insertNote(
-                        NoteEntity(
-                            content = inputText,
-                            category = selectedCategory
-                        )
-                    )
+                if (inputText.isNotBlank()) {
+                    viewModel.insertNote(NoteEntity(content = inputText, category = selectedCategory))
                     inputText = ""
                 }
             },
             modifier = Modifier.fillMaxWidth(),
-            enabled = inputText.isNotEmpty()
+            enabled = inputText.isNotBlank()
         ) {
             Text("Save Note")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Notes List or Empty Message
         if (filteredNotes.isEmpty()) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Box(modifier = Modifier.padding(32.dp), contentAlignment = Alignment.Center) {
                     Text(
-                        text = if (searchText.isEmpty())
-                            "No notes in $selectedCategory yet"
-                        else
-                            "No notes found for \"$searchText\"",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = if (searchText.isBlank()) "No notes in $selectedCategory yet" else "No notes found for \"$searchText\"",
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
             }
         } else {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(filteredNotes) { note ->
-                    NoteItem(
-                        note = note,
-                        onDelete = { viewModel.deleteNote(note) },
-                        modifier = Modifier.animateItemPlacement()
-                    )
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(filteredNotes, key = { it.id }) { note ->
+                    NoteItem(note = note, onDelete = { viewModel.deleteNote(note) })
                 }
             }
         }
@@ -235,49 +196,37 @@ fun HomeScreen(viewModel: NoteViewModel) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun NoteItem(
-    note: NoteEntity,
-    onDelete: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    var showDeleteDialog by remember { mutableStateOf(false) }
+fun NoteItem(note: NoteEntity, onDelete: () -> Unit) {
+    var showDialog by remember { mutableStateOf(false) }
 
-    if (showDeleteDialog) {
+    if (showDialog) {
         AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
+            onDismissRequest = { showDialog = false },
             title = { Text("Delete Note") },
             text = { Text("Are you sure you want to delete this note?") },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        onDelete()
-                        showDeleteDialog = false
-                    }
-                ) {
-                    Text("Delete")
-                }
+                TextButton(onClick = {
+                    onDelete()
+                    showDialog = false
+                }) { Text("Delete") }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
-                }
+                TextButton(onClick = { showDialog = false }) { Text("Cancel") }
             }
         )
     }
 
     Card(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(
-                onLongClick = { showDeleteDialog = true },
-                onClick = { /* Optional: handle note click */ }
+                onClick = {},
+                onLongClick = { showDialog = true }
             ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier = Modifier.padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.Top
         ) {
@@ -288,42 +237,23 @@ fun NoteItem(
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis
             )
-            IconButton(
-                onClick = { showDeleteDialog = true },
-                modifier = Modifier.size(24.dp)
-            ) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = "Delete",
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(20.dp)
-                )
+            IconButton(onClick = { showDialog = true }) {
+                Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
             }
         }
     }
 }
 
 @Composable
-fun CategoryItem(
-    text: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
+fun CategoryItem(text: String, isSelected: Boolean, onClick: () -> Unit) {
     Surface(
         shape = RoundedCornerShape(20.dp),
-        color = if (isSelected)
-            MaterialTheme.colorScheme.primary
-        else
-            MaterialTheme.colorScheme.surfaceVariant,
-        tonalElevation = if (isSelected) 4.dp else 0.dp,
+        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
         modifier = Modifier.clickable { onClick() }
     ) {
         Text(
             text = text,
-            color = if (isSelected)
-                MaterialTheme.colorScheme.onPrimary
-            else
-                MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
             fontSize = 14.sp

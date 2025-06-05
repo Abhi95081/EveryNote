@@ -1,34 +1,65 @@
-package com.example.everynote.prefdatastorage.homedb
-
+import android.content.Context
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import com.example.everynote.prefdatastorage.homedb.NoteEntity
+import com.example.everynote.prefdatastorage.homedb.SharedPreferencesHelper
 import kotlinx.coroutines.launch
 
-class NoteViewModel(
-    private val sharedPreferencesHelper: SharedPreferencesHelper
-) : ViewModel() {
+class NoteViewModel(private val helper: SharedPreferencesHelper) : ViewModel() {
+    private val _notes = mutableStateListOf<NoteEntity>()
+    val notes: List<NoteEntity> get() = _notes
 
-    private val _notes = MutableStateFlow<List<NoteEntity>>(emptyList())
-    val notes: StateFlow<List<NoteEntity>> = _notes.asStateFlow()
+    var categories = mutableStateListOf("General")
+        private set
 
     init {
-        _notes.value = sharedPreferencesHelper.getNotes()
+        _notes.addAll(helper.getNotes())
+        val storedCategories = helper.getCategories()
+        if (storedCategories.isNotEmpty()) {
+            categories.clear()
+            categories.addAll(storedCategories)
+        }
     }
 
     fun insertNote(note: NoteEntity) {
-        viewModelScope.launch {
-            sharedPreferencesHelper.saveNote(note)
-            _notes.value = sharedPreferencesHelper.getNotes()
-        }
+        val nextId = (_notes.maxOfOrNull { it.id } ?: 0) + 1
+        val newNote = note.copy(id = nextId)
+        _notes.add(newNote)
+        helper.saveNotes(_notes)
     }
 
     fun deleteNote(note: NoteEntity) {
-        viewModelScope.launch {
-            sharedPreferencesHelper.deleteNote(note)
-            _notes.value = sharedPreferencesHelper.getNotes()
+        _notes.removeIf { it.id == note.id }
+        helper.saveNotes(_notes)
+    }
+
+    fun updateNote(updatedNote: NoteEntity) {
+        val index = _notes.indexOfFirst { it.id == updatedNote.id }
+        if (index != -1) {
+            _notes[index] = updatedNote
+            helper.saveNotes(_notes)
         }
+    }
+
+    fun addCategory(category: String) {
+        if (category !in categories) {
+            categories.add(category)
+            helper.saveCategories(categories)
+        }
+    }
+}
+
+class NoteViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        val sharedPrefHelper = SharedPreferencesHelper(context.applicationContext)
+        if (modelClass.isAssignableFrom(NoteViewModel::class.java)) {
+            return NoteViewModel(sharedPrefHelper) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

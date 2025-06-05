@@ -11,10 +11,10 @@ class SharedPreferencesHelper(context: Context) {
         context.getSharedPreferences("notes_prefs", Context.MODE_PRIVATE)
     private val gson = Gson()
 
-    fun saveNote(note: NoteEntity) {
-        val notes = getNotes().toMutableList()
-        notes.add(note)
-        sharedPreferences.edit { putString("notes", gson.toJson(notes)) }
+    fun saveNotes(notes: List<NoteEntity>) {
+        sharedPreferences.edit {
+            putString("notes", gson.toJson(notes))
+        }
     }
 
     fun getNotes(): List<NoteEntity> {
@@ -27,9 +27,19 @@ class SharedPreferencesHelper(context: Context) {
         }
     }
 
-    fun deleteNote(note: NoteEntity) {
-        val notes = getNotes().toMutableList()
-        notes.remove(note)
-        sharedPreferences.edit { putString("notes", gson.toJson(notes)) }
+    fun saveCategories(categories: List<String>) {
+        sharedPreferences.edit {
+            putString("categories", gson.toJson(categories))
+        }
+    }
+
+    fun getCategories(): List<String> {
+        val json = sharedPreferences.getString("categories", null)
+        return if (json != null) {
+            val type = object : TypeToken<List<String>>() {}.type
+            gson.fromJson(json, type) ?: emptyList()
+        } else {
+            emptyList()
+        }
     }
 }

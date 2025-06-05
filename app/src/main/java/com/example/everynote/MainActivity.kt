@@ -1,17 +1,29 @@
 package com.example.everynote
 
 import LoginScreen
+import NoteViewModel
+import NoteViewModelFactory
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,7 +36,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.compose.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.example.everynote.Animation.LottieLoadingAnimation
 import com.example.everynote.Screens.HomeScreen
 import com.example.everynote.ui.theme.EveryNoteTheme
@@ -49,8 +64,11 @@ class MainActivity : ComponentActivity() {
                         LoginScreen(navHostController = navController)
                     }
                     composable("home") {
-                        HomeScreen(viewModel = viewModel()) // 👈 inject ViewModel here
+                        val factory = NoteViewModelFactory(applicationContext)
+                        val noteViewModel: NoteViewModel = viewModel(factory = factory)
+                        HomeScreen(viewModel = noteViewModel)
                     }
+
 
                 }
             }
