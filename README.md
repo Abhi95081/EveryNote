@@ -47,6 +47,14 @@
 
 ---
 
+## 📥 Download
+
+🎉 The APK is available for direct download from Itch.io:
+
+👉 [Download EveryNote](https://abhishek-roushan.itch.io/everynotes)
+
+---
+
 ## 📂 Project Structure
 com.example.everynote/
 │
