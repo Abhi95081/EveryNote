@@ -4,6 +4,7 @@ import LoginScreen
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -48,7 +49,7 @@ class MainActivity : ComponentActivity() {
                         LoginScreen(navHostController = navController)
                     }
                     composable("home") {
-                        HomeScreen()
+                        HomeScreen(viewModel = viewModel()) // 👈 inject ViewModel here
                     }
 
                 }
