@@ -3,6 +3,7 @@ package com.example.everynote.prefdatastorage
 // UserPreferences.kt
 
 import android.content.Context
+import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -10,32 +11,33 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_preferences")
+
 class UserPreferences(private val context: Context) {
-    private val Context.dataStore by preferencesDataStore(name = "user_prefs")
+    private val nameKey = stringPreferencesKey("name")
+    private val photoUrlKey = stringPreferencesKey("photo_url")
+    private val emailKey = stringPreferencesKey("email")
+    private val passwordKey = stringPreferencesKey("password")
 
-    private val NAME_KEY = stringPreferencesKey("name")
-    private val PHOTO_URL_KEY = stringPreferencesKey("photo_url")
-    private val EMAIL_KEY = stringPreferencesKey("email")
-    private val PASSWORD_KEY = stringPreferencesKey("password")
-
-    suspend fun saveUser(name: String, photoUrl: String, email: String, password: String) {
-        context.dataStore.edit {
-            it[NAME_KEY] = name
-            it[PHOTO_URL_KEY] = photoUrl
-            it[EMAIL_KEY] = email
-            it[PASSWORD_KEY] = password
-        }
-    }
-
-    val userFlow: Flow<User> = context.dataStore.data.map { prefs ->
+    val userFlow: Flow<User> = context.dataStore.data.map { preferences ->
         User(
-            name = prefs[NAME_KEY] ?: "",
-            photoUrl = prefs[PHOTO_URL_KEY] ?: "",
-            email = prefs[EMAIL_KEY] ?: "",
-            password = prefs[PASSWORD_KEY] ?: ""
+            name = preferences[nameKey] ?: "",
+            photoUrl = preferences[photoUrlKey] ?: "",
+            email = preferences[emailKey] ?: "",
+            password = preferences[passwordKey] ?: ""
         )
     }
+
+    suspend fun saveUser(name: String, photoUrl: String, email: String, password: String) {
+        context.dataStore.edit { preferences ->
+            preferences[nameKey] = name
+            preferences[photoUrlKey] = photoUrl
+            preferences[emailKey] = email
+            preferences[passwordKey] = password
+        }
+    }
 }
+// User.kt and UserPreferences.kt - Add these missing classes
 
 data class User(
     val name: String,

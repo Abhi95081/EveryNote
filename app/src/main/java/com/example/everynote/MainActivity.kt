@@ -1,8 +1,6 @@
+// MainActivity.kt
 package com.example.everynote
 
-import LoginScreen
-import NoteViewModel
-import NoteViewModelFactory
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -10,24 +8,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -42,34 +26,55 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.everynote.Animation.LottieLoadingAnimation
 import com.example.everynote.Screens.HomeScreen
+import com.example.everynote.Screens.LoginScreen
+import com.example.everynote.prefdatastorage.UserPreferences
 import com.example.everynote.ui.theme.EveryNoteTheme
-
+import com.example.everynote.viewmodel.NoteViewModel
+import com.example.everynote.viewmodel.NoteViewModelFactory
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
         setContent {
             EveryNoteTheme {
                 val navController = rememberNavController()
-                NavHost(navController = navController, startDestination = "welcome") {
+                val context = applicationContext
+                val userPrefs = remember { UserPreferences(context) }
+                val user by userPrefs.userFlow.collectAsState(initial = null)
+
+                // Determine start destination
+                val startDestination = when {
+                    user?.email?.isNotEmpty() == true -> "home"
+                    else -> "welcome"
+                }
+
+                NavHost(navController = navController, startDestination = startDestination) {
                     composable("welcome") {
-                        WelcomeScreen(onGetStarted = {
-                            navController.navigate("login"){
-                                popUpTo("welcome") { inclusive = true }
+                        WelcomeScreen(
+                            onGetStarted = {
+                                navController.navigate("login") {
+                                    popUpTo("welcome") { inclusive = true }
+                                }
                             }
-                        })
+                        )
                     }
                     composable("login") {
                         LoginScreen(navHostController = navController)
                     }
                     composable("home") {
-                        val factory = NoteViewModelFactory(applicationContext)
+                        val factory = NoteViewModelFactory(context)
                         val noteViewModel: NoteViewModel = viewModel(factory = factory)
-                        HomeScreen(viewModel = noteViewModel)
+                        HomeScreen(
+                            viewModel = noteViewModel,
+                            onLogout = {
+                                navController.navigate("login") {
+                                    popUpTo("home") { inclusive = true }
+                                }
+                            }
+                        )
                     }
-
-
                 }
             }
         }
@@ -78,31 +83,40 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun WelcomeScreen(onGetStarted: () -> Unit) {
-    val clicked = remember { mutableStateOf(false) }
+    var clicked by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
-        targetValue = if (clicked.value) 0.9f else 1f,
+        targetValue = if (clicked) 0.9f else 1f,
         animationSpec = tween(durationMillis = 150),
         finishedListener = {
-            if (clicked.value) onGetStarted()
+            if (clicked) onGetStarted()
         }
     )
 
     val rainbowBrush = Brush.linearGradient(
-        colors = listOf(Color(0xFFff9a9e), Color(0xFFfad0c4), Color(0xFFfbc2eb), Color(0xFFa6c1ee))
+        colors = listOf(
+            Color(0xFFff9a9e),
+            Color(0xFFfad0c4),
+            Color(0xFFfbc2eb),
+            Color(0xFFa6c1ee)
+        )
     )
 
     val backgroundBrush = Brush.verticalGradient(
-        colors = listOf(Color(0xFF0f2027), Color(0xFF203a43), Color(0xFF2c5364))
+        colors = listOf(
+            Color(0xFF0f2027),
+            Color(0xFF203a43),
+            Color(0xFF2c5364)
+        )
     )
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = Color.Transparent
-    ) { innerPadding ->
+    ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(paddingValues)
                 .background(brush = backgroundBrush),
             contentAlignment = Alignment.Center
         ) {
@@ -121,14 +135,13 @@ fun WelcomeScreen(onGetStarted: () -> Unit) {
                 Text(
                     text = "Capture your day, one note at a time.",
                     color = Color.LightGray,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Normal
+                    fontSize = 16.sp
                 )
                 Spacer(modifier = Modifier.height(64.dp))
                 LottieLoadingAnimation()
                 Spacer(modifier = Modifier.height(64.dp))
                 Button(
-                    onClick = { clicked.value = true },
+                    onClick = { clicked = true },
                     shape = CircleShape,
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                     contentPadding = PaddingValues(),
@@ -137,7 +150,7 @@ fun WelcomeScreen(onGetStarted: () -> Unit) {
                         .height(55.dp)
                         .width(220.dp)
                         .graphicsLayer(scaleX = scale, scaleY = scale)
-                        .background(rainbowBrush, shape = CircleShape)
+                        .background(brush = rainbowBrush, shape = CircleShape)
                 ) {
                     Text(
                         text = "Get Started",

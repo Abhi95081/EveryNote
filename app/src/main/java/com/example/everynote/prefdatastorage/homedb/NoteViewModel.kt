@@ -1,55 +1,65 @@
+// NoteViewModel.kt - Fixed version
+package com.example.everynote.viewmodel
+
 import android.content.Context
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
 import com.example.everynote.prefdatastorage.homedb.NoteEntity
 import com.example.everynote.prefdatastorage.homedb.SharedPreferencesHelper
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class NoteViewModel(private val helper: SharedPreferencesHelper) : ViewModel() {
-    private val _notes = mutableStateListOf<NoteEntity>()
-    val notes: List<NoteEntity> get() = _notes
+    private val _notes = MutableStateFlow<List<NoteEntity>>(emptyList())
+    val notes: StateFlow<List<NoteEntity>> = _notes.asStateFlow()
 
-    var categories = mutableStateListOf("General")
-        private set
+    private val _categories = MutableStateFlow<List<String>>(listOf("General"))
+    val categories: StateFlow<List<String>> = _categories.asStateFlow()
 
     init {
-        _notes.addAll(helper.getNotes())
+        loadData()
+    }
+
+    private fun loadData() {
+        _notes.value = helper.getNotes()
         val storedCategories = helper.getCategories()
         if (storedCategories.isNotEmpty()) {
-            categories.clear()
-            categories.addAll(storedCategories)
+            _categories.value = storedCategories
         }
     }
 
     fun insertNote(note: NoteEntity) {
-        val nextId = (_notes.maxOfOrNull { it.id } ?: 0) + 1
+        val currentNotes = _notes.value
+        val nextId = (currentNotes.maxOfOrNull { it.id } ?: 0) + 1
         val newNote = note.copy(id = nextId)
-        _notes.add(newNote)
-        helper.saveNotes(_notes)
+        val updatedNotes = currentNotes + newNote
+        _notes.value = updatedNotes
+        helper.saveNotes(updatedNotes)
     }
 
     fun deleteNote(note: NoteEntity) {
-        _notes.removeIf { it.id == note.id }
-        helper.saveNotes(_notes)
+        val updatedNotes = _notes.value.filter { it.id != note.id }
+        _notes.value = updatedNotes
+        helper.saveNotes(updatedNotes)
     }
 
     fun updateNote(updatedNote: NoteEntity) {
-        val index = _notes.indexOfFirst { it.id == updatedNote.id }
+        val currentNotes = _notes.value.toMutableList()
+        val index = currentNotes.indexOfFirst { it.id == updatedNote.id }
         if (index != -1) {
-            _notes[index] = updatedNote
-            helper.saveNotes(_notes)
+            currentNotes[index] = updatedNote
+            _notes.value = currentNotes
+            helper.saveNotes(currentNotes)
         }
     }
 
     fun addCategory(category: String) {
-        if (category !in categories) {
-            categories.add(category)
-            helper.saveCategories(categories)
+        val currentCategories = _categories.value
+        if (category !in currentCategories) {
+            val updatedCategories = currentCategories + category
+            _categories.value = updatedCategories
+            helper.saveCategories(updatedCategories)
         }
     }
 }
@@ -58,6 +68,7 @@ class NoteViewModelFactory(private val context: Context) : ViewModelProvider.Fac
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         val sharedPrefHelper = SharedPreferencesHelper(context.applicationContext)
         if (modelClass.isAssignableFrom(NoteViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
             return NoteViewModel(sharedPrefHelper) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
