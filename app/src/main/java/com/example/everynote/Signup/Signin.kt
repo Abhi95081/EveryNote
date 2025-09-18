@@ -50,11 +50,11 @@ fun LoginScreen(navHostController: NavHostController) {
     var passwordVisible by remember { mutableStateOf(false) }
     var pickedImageUri by remember { mutableStateOf<Uri?>(null) }
 
-    // Update fields when saved user changes
+
     LaunchedEffect(Unit) {
         userPrefs.userFlow.collect { savedUser ->
             if (savedUser.name.isNotEmpty() && savedUser.email.isNotEmpty()) {
-                // User already logged in, navigate to home directly
+
                 navHostController.navigate("home") {
                     popUpTo("login") { inclusive = true }
                 }
