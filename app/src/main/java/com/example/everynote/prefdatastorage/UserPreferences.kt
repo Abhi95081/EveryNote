@@ -1,6 +1,5 @@
 package com.example.everynote.prefdatastorage
 
-// UserPreferences.kt
 
 import android.content.Context
 import androidx.datastore.core.DataStore
@@ -37,7 +36,6 @@ class UserPreferences(private val context: Context) {
         }
     }
 }
-// User.kt and UserPreferences.kt - Add these missing classes
 
 data class User(
     val name: String,
