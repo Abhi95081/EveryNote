@@ -44,7 +44,7 @@ class MainActivity : ComponentActivity() {
                 val userPrefs = remember { UserPreferences(context) }
                 val user by userPrefs.userFlow.collectAsState(initial = null)
 
-                // Determine start destination
+
                 val startDestination = when {
                     user?.email?.isNotEmpty() == true -> "home"
                     else -> "welcome"
