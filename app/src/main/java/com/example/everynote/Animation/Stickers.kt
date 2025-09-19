@@ -13,7 +13,7 @@ import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.everynote.R
 
 
-
+//LottieAnimation
 @Composable
 fun LottieLoadingAnimation() {
     val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.loading_animation))
